@@ -86,7 +86,7 @@ O projeto segue uma organização em camadas:
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `POST` | `/auth/login` | Autentica usuário e retorna JWT |
-| `POST` | `/usuarios` | Cria usuário |
+| `POST` | `/usuarios` | Cria usuário protegido por perfil `ADMIN` |
 | `GET` | `/usuarios` | Lista usuários ativos |
 | `POST` | `/departamentos` | Cria departamento |
 | `GET` | `/departamentos` | Lista departamentos ativos |
@@ -125,34 +125,45 @@ Com a aplicação rodando, acesse:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+## Usuário Admin Local
+
+Ao iniciar a aplicação, o `AdminBootstrap` cria automaticamente um usuário inicial caso ainda não exista:
+
+| Campo | Valor |
+|---|---|
+| Email | `admin@email.com` |
+| Senha | `123456` |
+| Role | `ADMIN` |
+
 ## Fluxo Rápido de Teste no Swagger
 
-1. Criar um usuário `ADMIN` em `POST /usuarios`
-2. Fazer login em `POST /auth/login`
-3. Copiar o token retornado
-4. Clicar em `Authorize`
-5. Informar `Bearer TOKEN`
-6. Testar os endpoints protegidos
+1. Iniciar a aplicação
+2. Acessar o Swagger em `http://localhost:8080/swagger-ui/index.html`
+3. Fazer login em `POST /auth/login` usando `admin@email.com` e `123456`
+4. Copiar o token retornado
+5. Clicar em `Authorize`
+6. Informar o token no formato `Bearer TOKEN`
+7. Acessar os endpoints protegidos
 
 ## Exemplos JSON
 
-### Criar Usuário ADMIN
+### Login com ADMIN Local
 
 ```json
 {
-  "nome": "Administrador",
-  "email": "admin@example.com",
-  "senha": "admin123",
-  "role": "ADMIN"
+  "email": "admin@email.com",
+  "senha": "123456"
 }
 ```
 
-### Login
+### Criar Usuário
 
 ```json
 {
-  "email": "admin@example.com",
-  "senha": "admin123"
+  "nome": "Técnico",
+  "email": "tecnico@example.com",
+  "senha": "123456",
+  "role": "TECNICO"
 }
 ```
 
