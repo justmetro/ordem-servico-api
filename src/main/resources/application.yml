@@ -22,5 +22,10 @@ server:
 app:
   security:
     jwt:
-      secret: "uma-chave-secreta-local-com-pelo-menos-32-caracteres"
-      expiration-minutes: 120
+      secret: ${JWT_SECRET:uma-chave-secreta-local-com-pelo-menos-32-caracteres}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  bootstrap:
+    admin:
+      nome: ${ADMIN_NOME:Administrador}
+      email: ${ADMIN_EMAIL:admin@email.com}
+      senha: ${ADMIN_SENHA:123456}
