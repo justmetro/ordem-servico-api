@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,21 +42,25 @@ public class OrdemServicoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SOLICITANTE')")
     public ResponseEntity<OrdemServicoResponse> criar(@Valid @RequestBody CriarOrdemServicoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ordemServicoService.criar(request));
     }
 
     @GetMapping("/metricas")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MetricasResponse> consultarMetricas() {
         return ResponseEntity.ok(ordemServicoService.consultarMetricas());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO', 'SOLICITANTE')")
     public ResponseEntity<OrdemServicoResponse> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(ordemServicoService.buscarPorId(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public ResponseEntity<PageResponse<OrdemServicoResponse>> listar(
             @RequestParam(required = false) StatusOrdemServico status,
             @RequestParam(required = false) Prioridade prioridade,
@@ -79,29 +84,34 @@ public class OrdemServicoController {
     }
 
     @PatchMapping("/{id}/atribuir-tecnico")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrdemServicoResponse> atribuirTecnico(@PathVariable Long id,
                                                                 @Valid @RequestBody AtribuirTecnicoRequest request) {
         return ResponseEntity.ok(ordemServicoService.atribuirTecnico(id, request));
     }
 
     @PatchMapping("/{id}/iniciar")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public ResponseEntity<OrdemServicoResponse> iniciar(@PathVariable Long id) {
         return ResponseEntity.ok(ordemServicoService.iniciar(id));
     }
 
     @PatchMapping("/{id}/finalizar")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public ResponseEntity<OrdemServicoResponse> finalizar(@PathVariable Long id,
                                                           @Valid @RequestBody FinalizarOrdemServicoRequest request) {
         return ResponseEntity.ok(ordemServicoService.finalizar(id, request));
     }
 
     @PatchMapping("/{id}/cancelar")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SOLICITANTE')")
     public ResponseEntity<OrdemServicoResponse> cancelar(@PathVariable Long id,
                                                          @Valid @RequestBody CancelarOrdemServicoRequest request) {
         return ResponseEntity.ok(ordemServicoService.cancelar(id, request));
     }
 
     @GetMapping("/{id}/historico")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public ResponseEntity<List<OrdemServicoHistoricoResponse>> listarHistorico(@PathVariable Long id) {
         return ResponseEntity.ok(ordemServicoService.listarHistorico(id));
     }

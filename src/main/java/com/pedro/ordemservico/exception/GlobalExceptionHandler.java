@@ -6,6 +6,8 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -69,6 +71,20 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, "Conflito de versionamento",
                 "O recurso foi alterado por outra transação. Recarregue os dados e tente novamente.",
                 request.getRequestURI(), null);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException exception,
+                                                                 HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Nao autenticado",
+                "Credenciais invalidas ou ausentes", request.getRequestURI(), null);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException exception,
+                                                               HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, "Acesso negado",
+                "Voce nao possui permissao para acessar este recurso", request.getRequestURI(), null);
     }
 
     @ExceptionHandler(Exception.class)

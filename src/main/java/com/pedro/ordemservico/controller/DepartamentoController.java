@@ -6,6 +6,7 @@ import com.pedro.ordemservico.service.DepartamentoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,11 +26,13 @@ public class DepartamentoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DepartamentoResponse> criar(@Valid @RequestBody DepartamentoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(departamentoService.criar(request));
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO', 'SOLICITANTE')")
     public ResponseEntity<List<DepartamentoResponse>> listar() {
         return ResponseEntity.ok(departamentoService.listarAtivos());
     }
