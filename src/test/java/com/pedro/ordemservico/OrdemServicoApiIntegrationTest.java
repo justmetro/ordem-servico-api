@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class OrdemServicoApiIntegrationTest {
+class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
 
     private static final String ADMIN_EMAIL = "admin@test.com";
     private static final String ADMIN_PASSWORD = "admin123";
