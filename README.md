@@ -117,6 +117,18 @@ No Windows:
 .\mvnw.cmd spring-boot:run
 ```
 
+## Variáveis de ambiente
+
+Em desenvolvimento local, o projeto possui valores padrão. Em produção, sobrescreva esses valores por variáveis de ambiente:
+
+| Variável | Descrição |
+|---|---|
+| `JWT_SECRET` | Chave secreta usada para assinar tokens JWT |
+| `JWT_EXPIRATION_MINUTES` | Tempo de expiração do token em minutos |
+| `ADMIN_NOME` | Nome do admin inicial criado no bootstrap |
+| `ADMIN_EMAIL` | Email do admin inicial |
+| `ADMIN_SENHA` | Senha do admin inicial |
+
 ## Swagger/OpenAPI
 
 Com a aplicação rodando, acesse:
