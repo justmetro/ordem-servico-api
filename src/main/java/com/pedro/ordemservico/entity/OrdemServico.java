@@ -13,7 +13,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.time.LocalDateTime;
 
@@ -62,6 +64,19 @@ public class OrdemServico {
     @Column(name = "descricao_tecnica", columnDefinition = "TEXT")
     private String descricaoTecnica;
 
+    @Column(name = "atualizado_em")
+    private LocalDateTime atualizadoEm;
+
+    @Column(name = "atualizado_por", length = 160)
+    private String atualizadoPor;
+
+    @Column(nullable = false)
+    private Boolean ativo;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @PrePersist
     public void prePersist() {
         if (dataAbertura == null) {
@@ -70,6 +85,14 @@ public class OrdemServico {
         if (status == null) {
             status = StatusOrdemServico.ABERTA;
         }
+        if (ativo == null) {
+            ativo = true;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        atualizadoEm = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -166,5 +189,37 @@ public class OrdemServico {
 
     public void setDescricaoTecnica(String descricaoTecnica) {
         this.descricaoTecnica = descricaoTecnica;
+    }
+
+    public LocalDateTime getAtualizadoEm() {
+        return atualizadoEm;
+    }
+
+    public void setAtualizadoEm(LocalDateTime atualizadoEm) {
+        this.atualizadoEm = atualizadoEm;
+    }
+
+    public String getAtualizadoPor() {
+        return atualizadoPor;
+    }
+
+    public void setAtualizadoPor(String atualizadoPor) {
+        this.atualizadoPor = atualizadoPor;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

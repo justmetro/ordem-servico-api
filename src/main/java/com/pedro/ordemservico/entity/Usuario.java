@@ -1,20 +1,22 @@
 package com.pedro.ordemservico.entity;
 
+import com.pedro.ordemservico.enums.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tecnicos")
-public class Tecnico {
+@Table(name = "usuarios")
+public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,8 +28,12 @@ public class Tecnico {
     @Column(nullable = false, unique = true, length = 160)
     private String email;
 
-    @Column(length = 120)
-    private String especialidade;
+    @Column(nullable = false, length = 255)
+    private String senha;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private Role role;
 
     @Column(nullable = false)
     private Boolean ativo;
@@ -35,9 +41,8 @@ public class Tecnico {
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm;
 
-    @OneToOne
-    @JoinColumn(name = "usuario_id")
-    private Usuario usuario;
+    @Column(name = "atualizado_em")
+    private LocalDateTime atualizadoEm;
 
     @PrePersist
     public void prePersist() {
@@ -47,6 +52,11 @@ public class Tecnico {
         if (ativo == null) {
             ativo = true;
         }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        atualizadoEm = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -73,12 +83,20 @@ public class Tecnico {
         this.email = email;
     }
 
-    public String getEspecialidade() {
-        return especialidade;
+    public String getSenha() {
+        return senha;
     }
 
-    public void setEspecialidade(String especialidade) {
-        this.especialidade = especialidade;
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public Boolean getAtivo() {
@@ -97,11 +115,11 @@ public class Tecnico {
         this.criadoEm = criadoEm;
     }
 
-    public Usuario getUsuario() {
-        return usuario;
+    public LocalDateTime getAtualizadoEm() {
+        return atualizadoEm;
     }
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+    public void setAtualizadoEm(LocalDateTime atualizadoEm) {
+        this.atualizadoEm = atualizadoEm;
     }
 }
