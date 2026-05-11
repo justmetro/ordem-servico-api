@@ -90,10 +90,30 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
 
     @Test
     void deveBloquearGetDepartamentosSemToken() throws Exception {
-        MvcResult result = mockMvc.perform(get("/departamentos"))
-                .andReturn();
+        mockMvc.perform(get("/departamentos"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.erro").value("Nao autenticado"))
+                .andExpect(jsonPath("$.mensagem").value("Credenciais invalidas ou ausentes"))
+                .andExpect(jsonPath("$.path").value("/departamentos"))
+                .andExpect(jsonPath("$.campos").doesNotExist());
+    }
 
-        assertTrue(result.getResponse().getStatus() == 401 || result.getResponse().getStatus() == 403);
+    @Test
+    void deveRetornarApiErrorResponseQuandoAcessoNegado() throws Exception {
+        criarUsuario("Solicitante", "solicitante@test.com", "senha123", Role.SOLICITANTE);
+        String solicitanteToken = login("solicitante@test.com", "senha123");
+
+        mockMvc.perform(get("/usuarios")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + solicitanteToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.erro").value("Acesso negado"))
+                .andExpect(jsonPath("$.mensagem").value("Voce nao tem permissao para acessar este recurso"))
+                .andExpect(jsonPath("$.path").value("/usuarios"))
+                .andExpect(jsonPath("$.campos").doesNotExist());
     }
 
     @Test
@@ -211,11 +231,15 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     private void criarUsuarioAdmin() {
+        criarUsuario("Administrador", ADMIN_EMAIL, ADMIN_PASSWORD, Role.ADMIN);
+    }
+
+    private void criarUsuario(String nome, String email, String senha, Role role) {
         Usuario usuario = new Usuario();
-        usuario.setNome("Administrador");
-        usuario.setEmail(ADMIN_EMAIL);
-        usuario.setSenha(passwordEncoder.encode(ADMIN_PASSWORD));
-        usuario.setRole(Role.ADMIN);
+        usuario.setNome(nome);
+        usuario.setEmail(email);
+        usuario.setSenha(passwordEncoder.encode(senha));
+        usuario.setRole(role);
         usuario.setAtivo(true);
         usuarioRepository.save(usuario);
     }

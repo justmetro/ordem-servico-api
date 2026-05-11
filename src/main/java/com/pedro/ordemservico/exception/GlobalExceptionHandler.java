@@ -84,7 +84,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException exception,
                                                                HttpServletRequest request) {
         return buildResponse(HttpStatus.FORBIDDEN, "Acesso negado",
-                "Voce nao possui permissao para acessar este recurso", request.getRequestURI(), null);
+                "Voce nao tem permissao para acessar este recurso", request.getRequestURI(), null);
     }
 
     @ExceptionHandler(Exception.class)
