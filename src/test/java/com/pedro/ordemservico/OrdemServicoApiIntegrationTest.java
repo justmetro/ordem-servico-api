@@ -57,22 +57,23 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
-    void deveCriarUsuarioPublico() throws Exception {
+    void deveCriarUsuarioComoAdmin() throws Exception {
         Map<String, Object> request = Map.of(
-                "nome", "Usuario Publico",
-                "email", "usuario.publico@test.com",
+                "nome", "Usuario Criado",
+                "email", "usuario.criado@test.com",
                 "senha", "senha123",
                 "role", "SOLICITANTE"
         );
 
         MvcResult result = mockMvc.perform(post("/usuarios")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andReturn();
 
         assertTrue(result.getResponse().getStatus() == 201 || result.getResponse().getStatus() == 200);
         JsonNode response = toJsonNode(result);
-        assertTrue("usuario.publico@test.com".equals(response.get("email").asText()));
+        assertTrue("usuario.criado@test.com".equals(response.get("email").asText()));
     }
 
     @Test

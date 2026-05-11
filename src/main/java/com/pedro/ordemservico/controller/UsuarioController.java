@@ -26,6 +26,7 @@ public class UsuarioController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponse> criar(@Valid @RequestBody CriarUsuarioRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.criar(request));
     }
