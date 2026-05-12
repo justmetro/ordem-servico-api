@@ -1,11 +1,8 @@
 spring:
   application:
     name: ordem-servico-api
-  datasource:
-    url: jdbc:postgresql://localhost:5432/ordem_servico_db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+  profiles:
+    default: local
   jpa:
     open-in-view: false
     hibernate:
@@ -49,10 +46,7 @@ info:
 app:
   security:
     jwt:
-      secret: ${JWT_SECRET:uma-chave-secreta-local-com-pelo-menos-32-caracteres}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
   bootstrap:
     admin:
       nome: ${ADMIN_NOME:Administrador}
-      email: ${ADMIN_EMAIL:admin@email.com}
-      senha: ${ADMIN_SENHA:123456}

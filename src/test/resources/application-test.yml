@@ -1,0 +1,16 @@
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true
+
+app:
+  security:
+    jwt:
+      secret: chave-secreta-de-testes-com-pelo-menos-32-caracteres
+      expiration-minutes: 120
+  bootstrap:
+    admin:
+      nome: Administrador Teste
+      email: admin-test@email.com
+      senha: 123456
