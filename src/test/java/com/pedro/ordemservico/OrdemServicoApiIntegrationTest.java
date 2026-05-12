@@ -101,6 +101,29 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
+    void devePermitirHealthCheckSemToken() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").exists());
+    }
+
+    @Test
+    void deveProtegerInfoDoActuatorSemToken() throws Exception {
+        mockMvc.perform(get("/actuator/info"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deveRetornarInfoDoActuatorComToken() throws Exception {
+        mockMvc.perform(get("/actuator/info")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.app.name").value("Ordem de Serviço API"))
+                .andExpect(jsonPath("$.app.description").value("API REST corporativa para gestão de ordens de serviço"))
+                .andExpect(jsonPath("$.app.version").value("1.0.0"));
+    }
+
+    @Test
     void deveRetornarApiErrorResponseQuandoAcessoNegado() throws Exception {
         criarUsuario("Solicitante", "solicitante@test.com", "senha123", Role.SOLICITANTE);
         String solicitanteToken = login("solicitante@test.com", "senha123");

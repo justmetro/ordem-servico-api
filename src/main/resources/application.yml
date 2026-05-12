@@ -20,6 +20,24 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Ordem de Serviço API
+    description: API REST corporativa para gestão de ordens de serviço
+    version: 1.0.0
+
 app:
   security:
     jwt:
