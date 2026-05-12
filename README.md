@@ -265,9 +265,33 @@ No Windows:
 
 Os testes usam Testcontainers com PostgreSQL real. É necessário estar com o Docker Desktop aberto para que os containers sejam iniciados automaticamente.
 
-## Docker Compose
+## Rodando com Docker
 
-O `docker-compose.yml` sobe um PostgreSQL local para uso em desenvolvimento. Os testes automatizados não dependem desse banco local, pois usam Testcontainers.
+O `docker-compose.yml` sobe o PostgreSQL e a API em containers:
+
+```bash
+docker compose up -d --build
+```
+
+Com os containers ativos, a API fica disponível em:
+
+```text
+http://localhost:8080
+```
+
+Health check:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+Swagger:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+Os testes automatizados não dependem desse banco local, pois usam Testcontainers.
 
 ## CI/CD
 
