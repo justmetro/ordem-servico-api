@@ -197,6 +197,32 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
+    void deveListarOrdensServicoComSortValido() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("sort", "dataAbertura,desc")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deveRetornarBadRequestQuandoSortPossuiCampoInvalido() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("sort", "campoInexistente,desc")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void deveRetornarBadRequestQuandoSortPossuiDirecaoInvalida() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("sort", "dataAbertura,invalid")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void deveRetornarBadRequestQuandoSizeMaiorQuePermitido() throws Exception {
         mockMvc.perform(get("/ordens-servico")
                         .param("size", "101")

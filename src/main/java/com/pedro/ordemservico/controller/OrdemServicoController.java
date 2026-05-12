@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/ordens-servico")
@@ -41,6 +42,7 @@ public class OrdemServicoController {
     private static final String DEFAULT_SORT = "dataAbertura,desc";
     private static final int MIN_PAGE_SIZE = 1;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final Set<String> CAMPOS_SORT_PERMITIDOS = Set.of("dataAbertura", "prioridade", "status", "id");
 
     private final OrdemServicoService ordemServicoService;
 
@@ -163,10 +165,18 @@ public class OrdemServicoController {
         if (property.isBlank()) {
             property = "dataAbertura";
         }
+        if (!CAMPOS_SORT_PERMITIDOS.contains(property)) {
+            throw new BusinessException("O parâmetro sort possui campo inválido");
+        }
 
         Sort.Direction direction = Sort.Direction.ASC;
-        if (parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())) {
-            direction = Sort.Direction.DESC;
+        if (parts.length > 1) {
+            String directionParam = parts[1].trim();
+            if ("desc".equalsIgnoreCase(directionParam)) {
+                direction = Sort.Direction.DESC;
+            } else if (!"asc".equalsIgnoreCase(directionParam)) {
+                throw new BusinessException("O parâmetro sort possui direção inválida");
+            }
         }
 
         return Sort.by(direction, property);
