@@ -137,6 +137,13 @@ Com a aplicação rodando, acesse:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+## Monitoramento e operação
+
+- `GET /actuator/health` está disponível publicamente para verificar se a aplicação está `UP`.
+- `/actuator/info` expõe informações básicas da aplicação.
+- O PostgreSQL no `docker-compose.yml` possui healthcheck com `pg_isready`.
+- Os logs foram configurados para reduzir ruído de SQL/Hibernate no ambiente local.
+
 ## Usuário Admin Local
 
 Ao iniciar a aplicação, o `AdminBootstrap` cria automaticamente um usuário inicial caso ainda não exista:
