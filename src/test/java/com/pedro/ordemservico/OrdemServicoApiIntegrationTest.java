@@ -223,6 +223,41 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
+    void deveRetornarBadRequestQuandoDataInicioDepoisDeDataFim() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("dataInicio", "2026-05-10")
+                        .param("dataFim", "2026-05-01")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void deveListarOrdensServicoApenasComDataInicio() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("dataInicio", "2026-05-01")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deveListarOrdensServicoApenasComDataFim() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("dataFim", "2026-05-10")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deveListarOrdensServicoComIntervaloDatasValido() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("dataInicio", "2026-05-01")
+                        .param("dataFim", "2026-05-10")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void deveRetornarBadRequestQuandoSizeMaiorQuePermitido() throws Exception {
         mockMvc.perform(get("/ordens-servico")
                         .param("size", "101")

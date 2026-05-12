@@ -19,14 +19,17 @@ import com.pedro.ordemservico.exception.ConflictException;
 import com.pedro.ordemservico.exception.ResourceNotFoundException;
 import com.pedro.ordemservico.repository.OrdemServicoHistoricoRepository;
 import com.pedro.ordemservico.repository.OrdemServicoRepository;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,20 +98,10 @@ public class OrdemServicoService {
         LocalDateTime dataInicioFiltro = dataInicio != null ? dataInicio.atStartOfDay() : null;
         LocalDateTime dataFimFiltro = dataFim != null ? dataFim.plusDays(1).atStartOfDay().minusNanos(1) : null;
 
-        Page<OrdemServico> page;
-        if (semFiltros(status, prioridade, tecnicoId, departamentoId, dataInicio, dataFim)) {
-            page = ordemServicoRepository.findByAtivoTrue(pageable);
-        } else {
-            page = ordemServicoRepository.filtrarAtivas(
-                    status,
-                    prioridade,
-                    tecnicoId,
-                    departamentoId,
-                    dataInicioFiltro,
-                    dataFimFiltro,
-                    pageable
-            );
-        }
+        Page<OrdemServico> page = ordemServicoRepository.findAll(
+                filtrarAtivas(status, prioridade, tecnicoId, departamentoId, dataInicioFiltro, dataFimFiltro),
+                pageable
+        );
 
         List<OrdemServicoResponse> content = page.getContent()
                 .stream()
@@ -126,18 +119,37 @@ public class OrdemServicoService {
         );
     }
 
-    private boolean semFiltros(StatusOrdemServico status,
-                               Prioridade prioridade,
-                               Long tecnicoId,
-                               Long departamentoId,
-                               LocalDate dataInicio,
-                               LocalDate dataFim) {
-        return status == null
-                && prioridade == null
-                && tecnicoId == null
-                && departamentoId == null
-                && dataInicio == null
-                && dataFim == null;
+    private Specification<OrdemServico> filtrarAtivas(StatusOrdemServico status,
+                                                      Prioridade prioridade,
+                                                      Long tecnicoId,
+                                                      Long departamentoId,
+                                                      LocalDateTime dataInicio,
+                                                      LocalDateTime dataFim) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.isTrue(root.get("ativo")));
+
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+            }
+            if (prioridade != null) {
+                predicates.add(criteriaBuilder.equal(root.get("prioridade"), prioridade));
+            }
+            if (tecnicoId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("tecnico").get("id"), tecnicoId));
+            }
+            if (departamentoId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("departamento").get("id"), departamentoId));
+            }
+            if (dataInicio != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("dataAbertura"), dataInicio));
+            }
+            if (dataFim != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("dataAbertura"), dataFim));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        };
     }
 
     @Transactional

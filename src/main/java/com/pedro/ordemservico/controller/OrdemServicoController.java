@@ -85,6 +85,7 @@ public class OrdemServicoController {
         String sortNormalizado = normalizarSort(sort);
 
         validarPaginacao(pageNormalizado, sizeNormalizado);
+        validarIntervaloDatas(dataInicio, dataFim);
         Pageable pageable = criarPageable(pageNormalizado, sizeNormalizado, sortNormalizado);
         return ResponseEntity.ok(ordemServicoService.listar(
                 status,
@@ -137,6 +138,12 @@ public class OrdemServicoController {
 
         if (size < MIN_PAGE_SIZE || size > MAX_PAGE_SIZE) {
             throw new BusinessException("O parâmetro size deve estar entre " + MIN_PAGE_SIZE + " e " + MAX_PAGE_SIZE);
+        }
+    }
+
+    private void validarIntervaloDatas(LocalDate dataInicio, LocalDate dataFim) {
+        if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
+            throw new BusinessException("O parâmetro dataInicio não pode ser depois de dataFim");
         }
     }
 
