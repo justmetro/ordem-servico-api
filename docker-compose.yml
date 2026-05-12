@@ -1,4 +1,23 @@
 services:
+  app:
+    build: .
+    container_name: ordem_servico_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/ordem_servico_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: uma-chave-secreta-local-com-pelo-menos-32-caracteres
+      JWT_EXPIRATION_MINUTES: 120
+      ADMIN_NOME: Administrador
+      ADMIN_EMAIL: admin@email.com
+      ADMIN_SENHA: 123456
+    ports:
+      - "8080:8080"
+
   postgres:
     image: postgres:16
     container_name: ordem_servico_postgres
