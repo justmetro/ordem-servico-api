@@ -102,6 +102,21 @@ O projeto segue uma organização em camadas:
 | `GET` | `/ordens-servico/{id}/historico` | Lista histórico da OS |
 | `GET` | `/ordens-servico/metricas` | Consulta métricas operacionais |
 
+### Paginação e filtros
+
+`GET /ordens-servico` aceita os parâmetros `page`, `size`, `sort`, `status`, `prioridade`, `tecnicoId`, `departamentoId`, `dataInicio` e `dataFim`.
+
+- `page` não pode ser negativo.
+- `size` deve estar entre `1` e `100`.
+- `sort` aceita apenas os campos `dataAbertura`, `prioridade`, `status` e `id`, com direção `asc` ou `desc`.
+- `dataInicio` deve ser menor ou igual a `dataFim` quando ambas forem informadas.
+
+Exemplo:
+
+```text
+GET /ordens-servico?page=0&size=20&sort=dataAbertura,desc
+```
+
 ## Como Rodar Localmente
 
 ```bash
