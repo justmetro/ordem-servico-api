@@ -10,6 +10,7 @@ import com.pedro.ordemservico.dto.response.OrdemServicoResponse;
 import com.pedro.ordemservico.dto.response.PageResponse;
 import com.pedro.ordemservico.enums.Prioridade;
 import com.pedro.ordemservico.enums.StatusOrdemServico;
+import com.pedro.ordemservico.exception.BusinessException;
 import com.pedro.ordemservico.service.OrdemServicoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +35,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/ordens-servico")
 public class OrdemServicoController {
+
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final String DEFAULT_SORT = "dataAbertura,desc";
+    private static final int MIN_PAGE_SIZE = 1;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final OrdemServicoService ordemServicoService;
 
@@ -68,10 +75,15 @@ public class OrdemServicoController {
             @RequestParam(required = false) Long departamentoId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "dataAbertura,desc") String sort) {
-        Pageable pageable = PageRequest.of(page, size, toSort(sort));
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort) {
+        int pageNormalizado = page != null ? page : DEFAULT_PAGE;
+        int sizeNormalizado = size != null ? size : DEFAULT_PAGE_SIZE;
+        String sortNormalizado = normalizarSort(sort);
+
+        validarPaginacao(pageNormalizado, sizeNormalizado);
+        Pageable pageable = criarPageable(pageNormalizado, sizeNormalizado, sortNormalizado);
         return ResponseEntity.ok(ordemServicoService.listar(
                 status,
                 prioridade,
@@ -116,9 +128,34 @@ public class OrdemServicoController {
         return ResponseEntity.ok(ordemServicoService.listarHistorico(id));
     }
 
+    private void validarPaginacao(int page, int size) {
+        if (page < 0) {
+            throw new BusinessException("O parâmetro page não pode ser negativo");
+        }
+
+        if (size < MIN_PAGE_SIZE || size > MAX_PAGE_SIZE) {
+            throw new BusinessException("O parâmetro size deve estar entre " + MIN_PAGE_SIZE + " e " + MAX_PAGE_SIZE);
+        }
+    }
+
+    private Pageable criarPageable(int page, int size, String sort) {
+        try {
+            return PageRequest.of(page, size, toSort(sort));
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException("Parâmetros de paginação inválidos", exception);
+        }
+    }
+
+    private String normalizarSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return DEFAULT_SORT;
+        }
+        return sort.trim();
+    }
+
     private Sort toSort(String sort) {
         if (sort == null || sort.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "dataAbertura");
+            sort = DEFAULT_SORT;
         }
 
         String[] parts = sort.split(",", 2);

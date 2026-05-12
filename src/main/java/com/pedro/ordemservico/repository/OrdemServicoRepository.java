@@ -16,6 +16,8 @@ public interface OrdemServicoRepository extends JpaRepository<OrdemServico, Long
 
     List<OrdemServico> findByAtivoTrue();
 
+    Page<OrdemServico> findByAtivoTrue(Pageable pageable);
+
     @Query("""
             SELECT os
             FROM OrdemServico os

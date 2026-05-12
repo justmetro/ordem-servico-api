@@ -190,6 +190,31 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
+    void deveListarOrdensServicoSemParametros() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deveRetornarBadRequestQuandoSizeMaiorQuePermitido() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("size", "101")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void deveRetornarBadRequestQuandoPageNegativo() throws Exception {
+        mockMvc.perform(get("/ordens-servico")
+                        .param("page", "-1")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void deveIniciarOsComoAdmin() throws Exception {
         Long departamentoId = criarDepartamento("Financeiro", "FIN");
         Long ordemServicoId = criarOrdemServico(departamentoId);

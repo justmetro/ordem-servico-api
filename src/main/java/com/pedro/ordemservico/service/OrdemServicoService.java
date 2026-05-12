@@ -95,15 +95,20 @@ public class OrdemServicoService {
         LocalDateTime dataInicioFiltro = dataInicio != null ? dataInicio.atStartOfDay() : null;
         LocalDateTime dataFimFiltro = dataFim != null ? dataFim.plusDays(1).atStartOfDay().minusNanos(1) : null;
 
-        Page<OrdemServico> page = ordemServicoRepository.filtrarAtivas(
-                status,
-                prioridade,
-                tecnicoId,
-                departamentoId,
-                dataInicioFiltro,
-                dataFimFiltro,
-                pageable
-        );
+        Page<OrdemServico> page;
+        if (semFiltros(status, prioridade, tecnicoId, departamentoId, dataInicio, dataFim)) {
+            page = ordemServicoRepository.findByAtivoTrue(pageable);
+        } else {
+            page = ordemServicoRepository.filtrarAtivas(
+                    status,
+                    prioridade,
+                    tecnicoId,
+                    departamentoId,
+                    dataInicioFiltro,
+                    dataFimFiltro,
+                    pageable
+            );
+        }
 
         List<OrdemServicoResponse> content = page.getContent()
                 .stream()
@@ -119,6 +124,20 @@ public class OrdemServicoService {
                 page.isFirst(),
                 page.isLast()
         );
+    }
+
+    private boolean semFiltros(StatusOrdemServico status,
+                               Prioridade prioridade,
+                               Long tecnicoId,
+                               Long departamentoId,
+                               LocalDate dataInicio,
+                               LocalDate dataFim) {
+        return status == null
+                && prioridade == null
+                && tecnicoId == null
+                && departamentoId == null
+                && dataInicio == null
+                && dataFim == null;
     }
 
     @Transactional
