@@ -117,6 +117,32 @@ No Windows:
 .\mvnw.cmd spring-boot:run
 ```
 
+## Profiles de ambiente
+
+- `local`: usado no desenvolvimento com PostgreSQL via Docker Compose.
+- `test`: usado nos testes automatizados com Testcontainers.
+- `prod`: preparado para produção usando variáveis de ambiente.
+
+Executar localmente no Windows:
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+Executar localmente no Linux/Mac:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Executar testes com o profile de teste:
+
+```powershell
+.\mvnw.cmd clean test -Dspring.profiles.active=test
+```
+
+O GitHub Actions também executa os testes com o profile `test`.
+
 ## Variáveis de ambiente
 
 Em desenvolvimento local, o projeto possui valores padrão. Em produção, sobrescreva esses valores por variáveis de ambiente:
@@ -228,13 +254,13 @@ Ao iniciar a aplicação, o `AdminBootstrap` cria automaticamente um usuário in
 ## Como Rodar Testes
 
 ```bash
-./mvnw clean test
+./mvnw clean test -Dspring.profiles.active=test
 ```
 
 No Windows:
 
 ```powershell
-.\mvnw.cmd clean test
+.\mvnw.cmd clean test -Dspring.profiles.active=test
 ```
 
 Os testes usam Testcontainers com PostgreSQL real. É necessário estar com o Docker Desktop aberto para que os containers sejam iniciados automaticamente.
@@ -248,7 +274,7 @@ O `docker-compose.yml` sobe um PostgreSQL local para uso em desenvolvimento. Os 
 O projeto possui workflow de CI com GitHub Actions. A cada `push` ou `pull_request` para a branch `main`, o pipeline executa:
 
 ```bash
-./mvnw clean test
+./mvnw clean test -Dspring.profiles.active=test
 ```
 
 Como os testes usam Testcontainers, o próprio workflow usa Docker disponível no runner do GitHub Actions.
