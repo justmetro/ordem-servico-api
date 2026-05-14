@@ -364,6 +364,60 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
+    void deveRestringirOrdemServicoAoTecnicoResponsavel() throws Exception {
+        Long departamentoId = criarDepartamento("Financeiro", "FIN");
+        Long usuarioTecnicoAId = criarUsuario("Tecnico A", "tecnico.a.usuario@test.com", "senha123", Role.TECNICO);
+        Long usuarioTecnicoBId = criarUsuario("Tecnico B", "tecnico.b.usuario@test.com", "senha123", Role.TECNICO);
+        Long tecnicoAId = criarTecnico("Tecnico A", "tecnico.a@test.com", usuarioTecnicoAId);
+        criarTecnico("Tecnico B", "tecnico.b@test.com", usuarioTecnicoBId);
+        Long ordemServicoId = criarOrdemServico(departamentoId, tecnicoAId);
+
+        String tokenTecnicoA = login("tecnico.a.usuario@test.com", "senha123");
+        mockMvc.perform(get("/ordens-servico/{id}", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tecnicoId").value(tecnicoAId));
+
+        mockMvc.perform(get("/ordens-servico")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(ordemServicoId));
+
+        mockMvc.perform(patch("/ordens-servico/{id}/iniciar", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("EM_ANDAMENTO"));
+
+        mockMvc.perform(patch("/ordens-servico/{id}/finalizar", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("descricaoTecnica", "Servico concluido pelo tecnico responsavel"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FINALIZADA"));
+
+        String tokenTecnicoB = login("tecnico.b.usuario@test.com", "senha123");
+        mockMvc.perform(get("/ordens-servico/{id}", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoB))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/ordens-servico")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+
+        mockMvc.perform(patch("/ordens-servico/{id}/iniciar", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoB))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/ordens-servico/{id}/finalizar", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenTecnicoB)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("descricaoTecnica", "Tentativa de finalizar"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void deveConsultarMetricasComoAdmin() throws Exception {
         mockMvc.perform(get("/ordens-servico/metricas")
                         .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
@@ -382,14 +436,14 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
         criarUsuario("Administrador", ADMIN_EMAIL, ADMIN_PASSWORD, Role.ADMIN);
     }
 
-    private void criarUsuario(String nome, String email, String senha, Role role) {
+    private Long criarUsuario(String nome, String email, String senha, Role role) {
         Usuario usuario = new Usuario();
         usuario.setNome(nome);
         usuario.setEmail(email);
         usuario.setSenha(passwordEncoder.encode(senha));
         usuario.setRole(role);
         usuario.setAtivo(true);
-        usuarioRepository.save(usuario);
+        return usuarioRepository.save(usuario).getId();
     }
 
     private String login(String email, String senha) throws Exception {
@@ -430,6 +484,33 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
         return toJsonNode(result).get("id").asLong();
     }
 
+    private Long criarOrdemServico(Long departamentoId, Long tecnicoId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/ordens-servico")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(ordemServicoRequest(departamentoId, tecnicoId))))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        return toJsonNode(result).get("id").asLong();
+    }
+
+    private Long criarTecnico(String nome, String email, Long usuarioId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/tecnicos")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of(
+                                "nome", nome,
+                                "email", email,
+                                "especialidade", "Infraestrutura",
+                                "usuarioId", usuarioId
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        return toJsonNode(result).get("id").asLong();
+    }
+
     private void iniciarOrdemServico(Long ordemServicoId) throws Exception {
         mockMvc.perform(patch("/ordens-servico/{id}/iniciar", ordemServicoId)
                         .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
@@ -443,6 +524,17 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
                 "solicitante", "Maria Silva",
                 "prioridade", "ALTA",
                 "departamentoId", departamentoId
+        );
+    }
+
+    private Map<String, Object> ordemServicoRequest(Long departamentoId, Long tecnicoId) {
+        return Map.of(
+                "titulo", "Computador nao liga",
+                "descricao", "Equipamento nao apresenta sinal de energia",
+                "solicitante", "Maria Silva",
+                "prioridade", "ALTA",
+                "departamentoId", departamentoId,
+                "tecnicoId", tecnicoId
         );
     }
 

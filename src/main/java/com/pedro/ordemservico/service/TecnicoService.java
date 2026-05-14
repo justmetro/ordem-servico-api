@@ -5,6 +5,7 @@ import com.pedro.ordemservico.dto.response.TecnicoResponse;
 import com.pedro.ordemservico.entity.Tecnico;
 import com.pedro.ordemservico.entity.Usuario;
 import com.pedro.ordemservico.exception.BusinessException;
+import com.pedro.ordemservico.exception.ForbiddenException;
 import com.pedro.ordemservico.exception.ResourceNotFoundException;
 import com.pedro.ordemservico.repository.TecnicoRepository;
 import com.pedro.ordemservico.repository.UsuarioRepository;
@@ -60,6 +61,18 @@ public class TecnicoService {
 
         if (!Boolean.TRUE.equals(tecnico.getAtivo())) {
             throw new ResourceNotFoundException("Técnico não encontrado");
+        }
+
+        return tecnico;
+    }
+
+    @Transactional(readOnly = true)
+    public Tecnico buscarTecnicoDoUsuarioAutenticado(String email) {
+        Tecnico tecnico = tecnicoRepository.findByUsuarioEmail(email)
+                .orElseThrow(() -> new ForbiddenException("Usuario autenticado nao possui tecnico vinculado"));
+
+        if (!Boolean.TRUE.equals(tecnico.getAtivo())) {
+            throw new ForbiddenException("Tecnico vinculado ao usuario autenticado esta inativo");
         }
 
         return tecnico;

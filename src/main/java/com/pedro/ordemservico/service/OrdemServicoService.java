@@ -111,7 +111,7 @@ public class OrdemServicoService {
         LocalDateTime dataFimFiltro = dataFim != null ? dataFim.plusDays(1).atStartOfDay().minusNanos(1) : null;
 
         Page<OrdemServico> page = ordemServicoRepository.findAll(
-                filtrarAtivas(status, prioridade, tecnicoId, departamentoId, dataInicioFiltro, dataFimFiltro,
+                filtrarAtivas(status, prioridade, tecnicoIdParaFiltro(tecnicoId), departamentoId, dataInicioFiltro, dataFimFiltro,
                         solicitanteParaFiltro()),
                 pageable
         );
@@ -186,6 +186,7 @@ public class OrdemServicoService {
     @Transactional
     public OrdemServicoResponse iniciar(Long id) {
         OrdemServico ordemServico = buscarEntidadeAtivaPorId(id);
+        validarPodeExecutarUsuario(ordemServico);
         validarPodeIniciar(ordemServico);
         String emailUsuarioAtual = usuarioAutenticadoService.getEmailUsuarioAtual();
 
@@ -203,6 +204,7 @@ public class OrdemServicoService {
     @Transactional
     public OrdemServicoResponse finalizar(Long id, FinalizarOrdemServicoRequest request) {
         OrdemServico ordemServico = buscarEntidadeAtivaPorId(id);
+        validarPodeExecutarUsuario(ordemServico);
         validarPodeFinalizar(ordemServico);
 
         if (request.getDescricaoTecnica() == null || request.getDescricaoTecnica().isBlank()) {
@@ -336,13 +338,26 @@ public class OrdemServicoService {
     }
 
     private void validarPodeConsultar(OrdemServico ordemServico) {
-        if (usuarioAutenticadoService.isAdmin() || usuarioAutenticadoService.isTecnico()) {
+        if (usuarioAutenticadoService.isAdmin()) {
+            return;
+        }
+        if (usuarioAutenticadoService.isTecnico() && pertenceAoTecnicoAtual(ordemServico)) {
             return;
         }
         if (usuarioAutenticadoService.isSolicitante() && pertenceAoUsuarioAtual(ordemServico)) {
             return;
         }
         throw new ForbiddenException("Voce nao tem permissao para acessar esta ordem de servico");
+    }
+
+    private void validarPodeExecutarUsuario(OrdemServico ordemServico) {
+        if (usuarioAutenticadoService.isAdmin()) {
+            return;
+        }
+        if (usuarioAutenticadoService.isTecnico() && pertenceAoTecnicoAtual(ordemServico)) {
+            return;
+        }
+        throw new ForbiddenException("Voce nao tem permissao para executar esta ordem de servico");
     }
 
     private void validarPodeCancelarUsuario(OrdemServico ordemServico) {
@@ -362,11 +377,23 @@ public class OrdemServicoService {
         return usuarioAutenticadoService.getEmailUsuarioAtual().equals(ordemServico.getSolicitante());
     }
 
+    private boolean pertenceAoTecnicoAtual(OrdemServico ordemServico) {
+        Tecnico tecnico = tecnicoService.buscarTecnicoDoUsuarioAutenticado(usuarioAutenticadoService.getEmailUsuarioAtual());
+        return ordemServico.getTecnico() != null && Objects.equals(ordemServico.getTecnico().getId(), tecnico.getId());
+    }
+
     private String solicitanteParaFiltro() {
         if (usuarioAutenticadoService.isSolicitante()) {
             return usuarioAutenticadoService.getEmailUsuarioAtual();
         }
         return null;
+    }
+
+    private Long tecnicoIdParaFiltro(Long tecnicoId) {
+        if (usuarioAutenticadoService.isTecnico()) {
+            return tecnicoService.buscarTecnicoDoUsuarioAutenticado(usuarioAutenticadoService.getEmailUsuarioAtual()).getId();
+        }
+        return tecnicoId;
     }
 
     private void registrarHistorico(OrdemServico ordemServico, StatusOrdemServico statusAnterior,
