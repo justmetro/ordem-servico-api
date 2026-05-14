@@ -22,7 +22,8 @@ Este projeto simula um sistema backend corporativo com regras de negócio reais,
 - Atribuição de técnico
 - Início, finalização e cancelamento de OS
 - Histórico de transições de status
-- Auditoria com `atualizadoPor` e `atualizadoEm`
+- Auditoria real com usuário autenticado em `atualizadoPor` e no `alteradoPor` do histórico
+- Escopo por solicitante para listagem, consulta e cancelamento de OS
 - Paginação e filtros
 - Métricas operacionais e SLA
 - Versionamento otimista com `@Version`
@@ -70,7 +71,9 @@ O projeto segue uma organização em camadas:
 - Finalização exige `descricaoTecnica`
 - OS `FINALIZADA` ou `CANCELADA` não pode seguir fluxo inválido
 - Técnico e departamento precisam estar ativos para serem usados
-- Alterações de status geram registros de histórico
+- Alterações de status geram registros de histórico com o email do usuário autenticado
+- Usuários `SOLICITANTE` só podem consultar, listar e cancelar ordens em que sejam o solicitante
+- Acesso negado por regra de domínio retorna erro JSON padronizado com HTTP 403
 - Versionamento otimista evita conflitos concorrentes em atualizações
 
 ## Perfis de Acesso
@@ -78,8 +81,8 @@ O projeto segue uma organização em camadas:
 | Perfil | Permissões principais |
 |---|---|
 | `ADMIN` | Gerencia usuários, departamentos, técnicos, ordens, métricas e fluxos operacionais |
-| `TECNICO` | Consulta dados operacionais, inicia e finaliza ordens de serviço |
-| `SOLICITANTE` | Abre ordens de serviço e cancela ordens conforme regras atuais |
+| `TECNICO` | Consulta ordens e executa/finaliza conforme permissões da API |
+| `SOLICITANTE` | Abre ordens e só consulta, lista ou cancela suas próprias ordens |
 
 ## Endpoints Principais
 
@@ -324,7 +327,6 @@ API REST em Java/Spring Boot para gestão corporativa de ordens de serviço, com
 
 ## Próximos Passos
 
-- Melhorar escopo por usuário logado
 - Adicionar refresh token
 - Deploy
 - Exportação CSV
