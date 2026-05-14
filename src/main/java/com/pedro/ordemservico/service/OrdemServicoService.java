@@ -19,6 +19,7 @@ import com.pedro.ordemservico.exception.ConflictException;
 import com.pedro.ordemservico.exception.ResourceNotFoundException;
 import com.pedro.ordemservico.repository.OrdemServicoHistoricoRepository;
 import com.pedro.ordemservico.repository.OrdemServicoRepository;
+import com.pedro.ordemservico.security.UsuarioAutenticadoService;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,22 +40,24 @@ import java.util.stream.Collectors;
 @Service
 public class OrdemServicoService {
 
-    private static final String USUARIO_SISTEMA = "sistema";
     private static final long SLA_HORAS = 24L;
 
     private final OrdemServicoRepository ordemServicoRepository;
     private final OrdemServicoHistoricoRepository ordemServicoHistoricoRepository;
     private final DepartamentoService departamentoService;
     private final TecnicoService tecnicoService;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public OrdemServicoService(OrdemServicoRepository ordemServicoRepository,
                                OrdemServicoHistoricoRepository ordemServicoHistoricoRepository,
                                DepartamentoService departamentoService,
-                               TecnicoService tecnicoService) {
+                               TecnicoService tecnicoService,
+                               UsuarioAutenticadoService usuarioAutenticadoService) {
         this.ordemServicoRepository = ordemServicoRepository;
         this.ordemServicoHistoricoRepository = ordemServicoHistoricoRepository;
         this.departamentoService = departamentoService;
         this.tecnicoService = tecnicoService;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
     @Transactional
@@ -77,7 +80,8 @@ public class OrdemServicoService {
         ordemServico.setAtivo(true);
 
         OrdemServico ordemServicoSalva = ordemServicoRepository.save(ordemServico);
-        registrarHistorico(ordemServicoSalva, null, StatusOrdemServico.ABERTA, request.getSolicitante(), null);
+        registrarHistorico(ordemServicoSalva, null, StatusOrdemServico.ABERTA,
+                usuarioAutenticadoService.getEmailUsuarioAtual(), null);
 
         return toResponse(ordemServicoSalva);
     }
@@ -158,8 +162,10 @@ public class OrdemServicoService {
         impedirAlteracaoEncerrada(ordemServico);
 
         Tecnico tecnico = tecnicoService.buscarEntidadeAtivaPorId(request.getTecnicoId());
+        String emailUsuarioAtual = usuarioAutenticadoService.getEmailUsuarioAtual();
+
         ordemServico.setTecnico(tecnico);
-        ordemServico.setAtualizadoPor(USUARIO_SISTEMA);
+        ordemServico.setAtualizadoPor(emailUsuarioAtual);
 
         return toResponse(ordemServicoRepository.save(ordemServico));
     }
@@ -168,14 +174,15 @@ public class OrdemServicoService {
     public OrdemServicoResponse iniciar(Long id) {
         OrdemServico ordemServico = buscarEntidadeAtivaPorId(id);
         validarPodeIniciar(ordemServico);
+        String emailUsuarioAtual = usuarioAutenticadoService.getEmailUsuarioAtual();
 
         ordemServico.setDataInicio(LocalDateTime.now());
         ordemServico.setStatus(StatusOrdemServico.EM_ANDAMENTO);
-        ordemServico.setAtualizadoPor(USUARIO_SISTEMA);
+        ordemServico.setAtualizadoPor(emailUsuarioAtual);
 
         OrdemServico ordemServicoSalva = ordemServicoRepository.save(ordemServico);
         registrarHistorico(ordemServicoSalva, StatusOrdemServico.ABERTA, StatusOrdemServico.EM_ANDAMENTO,
-                USUARIO_SISTEMA, null);
+                emailUsuarioAtual, null);
 
         return toResponse(ordemServicoSalva);
     }
@@ -189,14 +196,16 @@ public class OrdemServicoService {
             throw new BusinessException("A descrição técnica é obrigatória para finalizar a ordem de serviço");
         }
 
+        String emailUsuarioAtual = usuarioAutenticadoService.getEmailUsuarioAtual();
+
         ordemServico.setDescricaoTecnica(request.getDescricaoTecnica());
         ordemServico.setDataFinalizacao(LocalDateTime.now());
         ordemServico.setStatus(StatusOrdemServico.FINALIZADA);
-        ordemServico.setAtualizadoPor(USUARIO_SISTEMA);
+        ordemServico.setAtualizadoPor(emailUsuarioAtual);
 
         OrdemServico ordemServicoSalva = ordemServicoRepository.save(ordemServico);
         registrarHistorico(ordemServicoSalva, StatusOrdemServico.EM_ANDAMENTO, StatusOrdemServico.FINALIZADA,
-                USUARIO_SISTEMA, null);
+                emailUsuarioAtual, null);
 
         return toResponse(ordemServicoSalva);
     }
@@ -208,13 +217,14 @@ public class OrdemServicoService {
 
         StatusOrdemServico statusAnterior = ordemServico.getStatus();
         String observacao = request != null ? request.getMotivo() : null;
+        String emailUsuarioAtual = usuarioAutenticadoService.getEmailUsuarioAtual();
 
         ordemServico.setStatus(StatusOrdemServico.CANCELADA);
-        ordemServico.setAtualizadoPor(USUARIO_SISTEMA);
+        ordemServico.setAtualizadoPor(emailUsuarioAtual);
 
         OrdemServico ordemServicoSalva = ordemServicoRepository.save(ordemServico);
         registrarHistorico(ordemServicoSalva, statusAnterior, StatusOrdemServico.CANCELADA,
-                USUARIO_SISTEMA, observacao);
+                emailUsuarioAtual, observacao);
 
         return toResponse(ordemServicoSalva);
     }

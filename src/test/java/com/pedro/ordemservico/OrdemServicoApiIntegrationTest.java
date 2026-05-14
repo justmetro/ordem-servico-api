@@ -283,7 +283,8 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
         mockMvc.perform(patch("/ordens-servico/{id}/iniciar", ordemServicoId)
                         .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("EM_ANDAMENTO"));
+                .andExpect(jsonPath("$.status").value("EM_ANDAMENTO"))
+                .andExpect(jsonPath("$.atualizadoPor").value(ADMIN_EMAIL));
     }
 
     @Test
@@ -297,7 +298,8 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(Map.of("descricaoTecnica", "Servico concluido"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FINALIZADA"));
+                .andExpect(jsonPath("$.status").value("FINALIZADA"))
+                .andExpect(jsonPath("$.atualizadoPor").value(ADMIN_EMAIL));
     }
 
     @Test
@@ -323,7 +325,9 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
         mockMvc.perform(get("/ordens-servico/{id}/historico", ordemServicoId)
                         .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].alteradoPor").value(ADMIN_EMAIL))
+                .andExpect(jsonPath("$[1].alteradoPor").value(ADMIN_EMAIL));
     }
 
     @Test
