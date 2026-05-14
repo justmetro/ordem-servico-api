@@ -16,6 +16,7 @@ import com.pedro.ordemservico.enums.Prioridade;
 import com.pedro.ordemservico.enums.StatusOrdemServico;
 import com.pedro.ordemservico.exception.BusinessException;
 import com.pedro.ordemservico.exception.ConflictException;
+import com.pedro.ordemservico.exception.ForbiddenException;
 import com.pedro.ordemservico.exception.ResourceNotFoundException;
 import com.pedro.ordemservico.repository.OrdemServicoHistoricoRepository;
 import com.pedro.ordemservico.repository.OrdemServicoRepository;
@@ -24,7 +25,6 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -342,7 +342,7 @@ public class OrdemServicoService {
         if (usuarioAutenticadoService.isSolicitante() && pertenceAoUsuarioAtual(ordemServico)) {
             return;
         }
-        throw new AccessDeniedException("Voce nao tem permissao para acessar esta ordem de servico");
+        throw new ForbiddenException("Voce nao tem permissao para acessar esta ordem de servico");
     }
 
     private void validarPodeCancelarUsuario(OrdemServico ordemServico) {
@@ -350,12 +350,12 @@ public class OrdemServicoService {
             return;
         }
         if (usuarioAutenticadoService.isTecnico()) {
-            throw new AccessDeniedException("Tecnico nao tem permissao para cancelar ordem de servico");
+            throw new ForbiddenException("Tecnico nao tem permissao para cancelar ordem de servico");
         }
         if (usuarioAutenticadoService.isSolicitante() && pertenceAoUsuarioAtual(ordemServico)) {
             return;
         }
-        throw new AccessDeniedException("Voce nao tem permissao para cancelar esta ordem de servico");
+        throw new ForbiddenException("Voce nao tem permissao para cancelar esta ordem de servico");
     }
 
     private boolean pertenceAoUsuarioAtual(OrdemServico ordemServico) {

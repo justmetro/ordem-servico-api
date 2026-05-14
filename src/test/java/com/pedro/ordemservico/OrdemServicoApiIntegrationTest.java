@@ -350,7 +350,12 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
 
         mockMvc.perform(get("/ordens-servico/{id}", ordemServicoId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenSolicitanteB))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.erro").value("Acesso negado"))
+                .andExpect(jsonPath("$.mensagem").value("Voce nao tem permissao para acessar esta ordem de servico"))
+                .andExpect(jsonPath("$.path").value("/ordens-servico/" + ordemServicoId))
+                .andExpect(jsonPath("$.campos").doesNotExist());
 
         mockMvc.perform(get("/ordens-servico")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenSolicitanteB))

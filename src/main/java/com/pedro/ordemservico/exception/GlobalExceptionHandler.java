@@ -41,6 +41,13 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), null);
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException exception,
+                                                            HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, "Acesso negado", exception.getMessage(),
+                request.getRequestURI(), null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException exception,
                                                                          HttpServletRequest request) {
