@@ -331,6 +331,34 @@ class OrdemServicoApiIntegrationTest extends PostgresContainerTestBase {
     }
 
     @Test
+    void deveRestringirOrdemServicoAoSolicitanteAutenticado() throws Exception {
+        Long departamentoId = criarDepartamento("Financeiro", "FIN");
+        criarUsuario("Solicitante A", "solicitante.a@test.com", "senha123", Role.SOLICITANTE);
+        criarUsuario("Solicitante B", "solicitante.b@test.com", "senha123", Role.SOLICITANTE);
+
+        String tokenSolicitanteA = login("solicitante.a@test.com", "senha123");
+        MvcResult criacaoResult = mockMvc.perform(post("/ordens-servico")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenSolicitanteA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(ordemServicoRequest(departamentoId))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.solicitante").value("solicitante.a@test.com"))
+                .andReturn();
+
+        Long ordemServicoId = toJsonNode(criacaoResult).get("id").asLong();
+        String tokenSolicitanteB = login("solicitante.b@test.com", "senha123");
+
+        mockMvc.perform(get("/ordens-servico/{id}", ordemServicoId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenSolicitanteB))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/ordens-servico")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenSolicitanteB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    @Test
     void deveConsultarMetricasComoAdmin() throws Exception {
         mockMvc.perform(get("/ordens-servico/metricas")
                         .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))

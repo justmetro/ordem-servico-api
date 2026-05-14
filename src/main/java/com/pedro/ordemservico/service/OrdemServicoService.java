@@ -24,6 +24,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 @Service
 public class OrdemServicoService {
 
+    private static final String USUARIO_SISTEMA = "sistema";
     private static final long SLA_HORAS = 24L;
 
     private final OrdemServicoRepository ordemServicoRepository;
@@ -67,11 +69,15 @@ public class OrdemServicoService {
         if (request.getTecnicoId() != null) {
             tecnico = tecnicoService.buscarEntidadeAtivaPorId(request.getTecnicoId());
         }
+        String emailUsuarioAtual = usuarioAutenticadoService.getEmailUsuarioAtual();
+        String solicitante = USUARIO_SISTEMA.equals(emailUsuarioAtual)
+                ? request.getSolicitante()
+                : emailUsuarioAtual;
 
         OrdemServico ordemServico = new OrdemServico();
         ordemServico.setTitulo(request.getTitulo());
         ordemServico.setDescricao(request.getDescricao());
-        ordemServico.setSolicitante(request.getSolicitante());
+        ordemServico.setSolicitante(solicitante);
         ordemServico.setPrioridade(request.getPrioridade());
         ordemServico.setDepartamento(departamento);
         ordemServico.setTecnico(tecnico);
@@ -81,14 +87,16 @@ public class OrdemServicoService {
 
         OrdemServico ordemServicoSalva = ordemServicoRepository.save(ordemServico);
         registrarHistorico(ordemServicoSalva, null, StatusOrdemServico.ABERTA,
-                usuarioAutenticadoService.getEmailUsuarioAtual(), null);
+                USUARIO_SISTEMA.equals(emailUsuarioAtual) ? solicitante : emailUsuarioAtual, null);
 
         return toResponse(ordemServicoSalva);
     }
 
     @Transactional(readOnly = true)
     public OrdemServicoResponse buscarPorId(Long id) {
-        return toResponse(buscarEntidadeAtivaPorId(id));
+        OrdemServico ordemServico = buscarEntidadeAtivaPorId(id);
+        validarPodeConsultar(ordemServico);
+        return toResponse(ordemServico);
     }
 
     @Transactional(readOnly = true)
@@ -103,7 +111,8 @@ public class OrdemServicoService {
         LocalDateTime dataFimFiltro = dataFim != null ? dataFim.plusDays(1).atStartOfDay().minusNanos(1) : null;
 
         Page<OrdemServico> page = ordemServicoRepository.findAll(
-                filtrarAtivas(status, prioridade, tecnicoId, departamentoId, dataInicioFiltro, dataFimFiltro),
+                filtrarAtivas(status, prioridade, tecnicoId, departamentoId, dataInicioFiltro, dataFimFiltro,
+                        solicitanteParaFiltro()),
                 pageable
         );
 
@@ -128,7 +137,8 @@ public class OrdemServicoService {
                                                       Long tecnicoId,
                                                       Long departamentoId,
                                                       LocalDateTime dataInicio,
-                                                      LocalDateTime dataFim) {
+                                                      LocalDateTime dataFim,
+                                                      String solicitante) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.isTrue(root.get("ativo")));
@@ -150,6 +160,9 @@ public class OrdemServicoService {
             }
             if (dataFim != null) {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("dataAbertura"), dataFim));
+            }
+            if (solicitante != null) {
+                predicates.add(criteriaBuilder.equal(root.get("solicitante"), solicitante));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
@@ -213,6 +226,7 @@ public class OrdemServicoService {
     @Transactional
     public OrdemServicoResponse cancelar(Long id, CancelarOrdemServicoRequest request) {
         OrdemServico ordemServico = buscarEntidadeAtivaPorId(id);
+        validarPodeCancelarUsuario(ordemServico);
         validarPodeCancelar(ordemServico);
 
         StatusOrdemServico statusAnterior = ordemServico.getStatus();
@@ -319,6 +333,40 @@ public class OrdemServicoService {
         if (ordemServico.getStatus() == StatusOrdemServico.CANCELADA) {
             throw new ConflictException("Não é possível alterar uma ordem de serviço cancelada");
         }
+    }
+
+    private void validarPodeConsultar(OrdemServico ordemServico) {
+        if (usuarioAutenticadoService.isAdmin() || usuarioAutenticadoService.isTecnico()) {
+            return;
+        }
+        if (usuarioAutenticadoService.isSolicitante() && pertenceAoUsuarioAtual(ordemServico)) {
+            return;
+        }
+        throw new AccessDeniedException("Voce nao tem permissao para acessar esta ordem de servico");
+    }
+
+    private void validarPodeCancelarUsuario(OrdemServico ordemServico) {
+        if (usuarioAutenticadoService.isAdmin()) {
+            return;
+        }
+        if (usuarioAutenticadoService.isTecnico()) {
+            throw new AccessDeniedException("Tecnico nao tem permissao para cancelar ordem de servico");
+        }
+        if (usuarioAutenticadoService.isSolicitante() && pertenceAoUsuarioAtual(ordemServico)) {
+            return;
+        }
+        throw new AccessDeniedException("Voce nao tem permissao para cancelar esta ordem de servico");
+    }
+
+    private boolean pertenceAoUsuarioAtual(OrdemServico ordemServico) {
+        return usuarioAutenticadoService.getEmailUsuarioAtual().equals(ordemServico.getSolicitante());
+    }
+
+    private String solicitanteParaFiltro() {
+        if (usuarioAutenticadoService.isSolicitante()) {
+            return usuarioAutenticadoService.getEmailUsuarioAtual();
+        }
+        return null;
     }
 
     private void registrarHistorico(OrdemServico ordemServico, StatusOrdemServico statusAnterior,

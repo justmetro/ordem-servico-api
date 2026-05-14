@@ -69,7 +69,7 @@ public class OrdemServicoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO', 'SOLICITANTE')")
     public ResponseEntity<PageResponse<OrdemServicoResponse>> listar(
             @RequestParam(required = false) StatusOrdemServico status,
             @RequestParam(required = false) Prioridade prioridade,
